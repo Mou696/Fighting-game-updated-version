@@ -64,7 +64,7 @@ const player = new Fighter({
       framesMax: 2
     },
     attack1: {
-      imageSrc: './img/Attack1.png',
+      imageSrc: './img/Attack2.png',
       framesMax: 8
     },
     takeHit: {
@@ -166,31 +166,43 @@ const keys = {
 
 decreaseTimer()
 
-function animate() {
-  window.requestAnimationFrame(animate)
-  c.fillStyle = 'black'
-  c.fillRect(0, 0, canvas.width, canvas.height)
-  background.update()
-  shop.update()
-  c.fillStyle = 'rgba(255, 255, 255, 0.15)'
-  c.fillRect(0, 0, canvas.width, canvas.height)
-  player.update()
-  enemy.update()
+const rightBoundaryOffset = 90;
 
-  player.velocity.x = 0
-  enemy.velocity.x = 0
+function animate() {
+    window.requestAnimationFrame(animate)
+    c.fillStyle = 'black'
+    c.fillRect(0, 0, canvas.width, canvas.height)
+    background.update()
+    shop.update()
+    c.fillStyle = 'rgba(255, 255, 255, 0.15)'
+    c.fillRect(0, 0, canvas.width, canvas.height)
+    player.update()
+    enemy.update()
+  
+    player.velocity.x = 0
+    enemy.velocity.x = 0
+  
 
   // player movement
-
   if (keys.a.pressed && player.lastKey === 'a') {
     player.velocity.x = -5
-    player.switchSprite('run')
+    // Prevent the player from going out of bounds on the left
+    if (player.position.x + player.velocity.x >= 0) {
+      player.switchSprite('run')
+    } else {
+      player.velocity.x = 0;
+    }
   } else if (keys.d.pressed && player.lastKey === 'd') {
     player.velocity.x = 5
-    player.switchSprite('run')
-  } else {
-    player.switchSprite('idle')
-  }
+    // Prevent the player from going out of bounds on the right
+    if (player.position.x + player.width + player.velocity.x <= canvas.width - rightBoundaryOffset) {
+        player.switchSprite('run')
+      } else {
+        player.velocity.x = 0;
+      }
+    } else {
+      player.switchSprite('idle')
+    }
 
   // jumping
   if (player.velocity.y < 0) {
@@ -202,13 +214,23 @@ function animate() {
   // Enemy movement
   if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') {
     enemy.velocity.x = -5
-    enemy.switchSprite('run')
+    // Prevent the enemy from going out of bounds on the left
+    if (enemy.position.x + enemy.velocity.x >= 0) {
+      enemy.switchSprite('run')
+    } else {
+      enemy.velocity.x = 0;
+    }
   } else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') {
     enemy.velocity.x = 5
-    enemy.switchSprite('run')
-  } else {
-    enemy.switchSprite('idle')
-  }
+    // Prevent the enemy from going out of bounds on the right
+    if (enemy.position.x + enemy.width + enemy.velocity.x <= canvas.width - rightBoundaryOffset) {
+        enemy.switchSprite('run')
+      } else {
+        enemy.velocity.x = 0;
+      }
+    } else {
+      enemy.switchSprite('idle')
+    }
 
   // jumping
   if (enemy.velocity.y < 0) {
@@ -216,6 +238,8 @@ function animate() {
   } else if (enemy.velocity.y > 0) {
     enemy.switchSprite('fall')
   }
+
+
 
   // detect for collision & enemy gets hit
   if (
@@ -271,6 +295,7 @@ function animate() {
 
 
   }
+
 }
 
 animate()
@@ -287,8 +312,12 @@ window.addEventListener('keydown', (event) => {
         player.lastKey = 'a'
         break
       case 'w':
-        player.velocity.y = -20
-        break
+         // Prevent double jump by checking if player is on the ground
+         if (!player.isJumping) {
+            player.velocity.y = -20;
+            player.isJumping = true;
+          }
+          break;
       case ' ':
         player.attack()
         break
@@ -306,8 +335,12 @@ window.addEventListener('keydown', (event) => {
         enemy.lastKey = 'ArrowLeft'
         break
       case 'ArrowUp':
-        enemy.velocity.y = -20
-        break
+        // Prevent double jump by checking if enemy is on the ground
+        if (!enemy.isJumping) {
+          enemy.velocity.y = -20;
+          enemy.isJumping = true;
+        }
+        break;
       case 'ArrowDown':
         enemy.attack()
 
@@ -339,19 +372,19 @@ window.addEventListener('keyup', (event) => {
 
 
 
-// this is for the new game
-
-function newGameKey(event) {
-  if (event.key === 'y' || event.key === 'Y') {
-      document.removeEventListener('keydown', newGameKey);
-      startNewGame();
-  }
-}
-
-function startNewGame() {
-  console.log('Aloitetaan uusi peli');
- 
+// New game 
+window.addEventListener('keydown', (event) => {
+    if (event.key === 'n' || event.key === 'N') {
+      // Reload the page
+      location.reload();
+    }
+  });
   
-}
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'y' || event.key === 'Y') {
+      // Reload the page
+      location.reload();
+    }
+  });
 
 
