@@ -1,12 +1,10 @@
-const canvas = document.querySelector('canvas')
-const c = canvas.getContext('2d')
+const canvas = document.querySelector('canvas');
+const c = canvas.getContext('2d');
 
-canvas.width = 1024
-canvas.height = 576
+canvas.width = 1024;
+canvas.height = 576;
 
-c.fillRect(0, 0, canvas.width, canvas.height)
-
-const gravity = 0.7
+const gravity = 0.7;
 
 const background = new Sprite({
   position: {
@@ -14,7 +12,7 @@ const background = new Sprite({
     y: 0
   },
   imageSrc: './img/background.png'
-})
+});
 
 const shop = new Sprite({
   position: {
@@ -24,7 +22,7 @@ const shop = new Sprite({
   imageSrc: './img/shop.png',
   scale: 2.75,
   framesMax: 6
-})
+});
 
 const player = new Fighter({
   position: {
@@ -32,10 +30,6 @@ const player = new Fighter({
     y: 0
   },
   velocity: {
-    x: 0,
-    y: 0
-  },
-  offset: {
     x: 0,
     y: 0
   },
@@ -84,7 +78,7 @@ const player = new Fighter({
     width: 160,
     height: 50
   }
-})
+});
 
 const enemy = new Fighter({
   position: {
@@ -96,10 +90,6 @@ const enemy = new Fighter({
     y: 0
   },
   color: 'blue',
-  offset: {
-    x: -50,
-    y: 0
-  },
   imageSrc: './img/kenji-idle.png',
   framesMax: 6,
   scale: 1.6,
@@ -145,195 +135,166 @@ const enemy = new Fighter({
     width: 170,
     height: 50
   }
-})
-
-console.log(player)
+});
 
 const keys = {
-  a: {
-    pressed: false
-  },
-  d: {
-    pressed: false
-  },
-  ArrowRight: {
-    pressed: false
-  },
-  ArrowLeft: {
-    pressed: false
-  }
-}
+  a: { pressed: false },
+  d: { pressed: false },
+  ArrowRight: { pressed: false },
+  ArrowLeft: { pressed: false }
+};
 
-decreaseTimer()
+decreaseTimer();
 
 const rightBoundaryOffset = 90;
 
 function animate() {
-    window.requestAnimationFrame(animate)
-    c.fillStyle = 'black'
-    c.fillRect(0, 0, canvas.width, canvas.height)
-    background.update()
-    shop.update()
-    c.fillStyle = 'rgba(255, 255, 255, 0.15)'
-    c.fillRect(0, 0, canvas.width, canvas.height)
-    player.update()
-    enemy.update()
-  
-    player.velocity.x = 0
-    enemy.velocity.x = 0
-  
+  window.requestAnimationFrame(animate);
+  c.fillStyle = 'black';
+  c.fillRect(0, 0, canvas.width, canvas.height);
+  background.update();
+  shop.update();
+  c.fillStyle = 'rgba(255, 255, 255, 0.15)';
+  c.fillRect(0, 0, canvas.width, canvas.height);
+  player.update();
+  enemy.update();
 
-  // player movement
+  // Reset velocity
+  player.velocity.x = 0;
+  enemy.velocity.x = 0;
+
+  // Player movement
+  handlePlayerMovement();
+
+  // Enemy movement
+  handleEnemyMovement();
+
+  // Detect collision and handle hits
+  handleCollision();
+
+  // End game based on health
+  if (enemy.health <= 0 || player.health <= 0) {
+    determineWinner({ player, enemy, timerId });
+    document.addEventListener('keydown', newGameKey);
+  }
+}
+
+function handlePlayerMovement() {
   if (keys.a.pressed && player.lastKey === 'a') {
-    player.velocity.x = -5
-    // Prevent the player from going out of bounds on the left
+    player.velocity.x = -5;
     if (player.position.x + player.velocity.x >= 0) {
-      player.switchSprite('run')
+      player.switchSprite('run');
     } else {
       player.velocity.x = 0;
     }
   } else if (keys.d.pressed && player.lastKey === 'd') {
-    player.velocity.x = 5
-    // Prevent the player from going out of bounds on the right
+    player.velocity.x = 5;
     if (player.position.x + player.width + player.velocity.x <= canvas.width - rightBoundaryOffset) {
-        player.switchSprite('run')
-      } else {
-        player.velocity.x = 0;
-      }
+      player.switchSprite('run');
     } else {
-      player.switchSprite('idle')
+      player.velocity.x = 0;
     }
-
-  // jumping
-  if (player.velocity.y < 0) {
-    player.switchSprite('jump')
-  } else if (player.velocity.y > 0) {
-    player.switchSprite('fall')
+  } else {
+    player.switchSprite('idle');
   }
 
-  // Enemy movement
+  // Jumping logic
+  if (player.velocity.y < 0) {
+    player.switchSprite('jump');
+  } else if (player.velocity.y > 0) {
+    player.switchSprite('fall');
+  }
+}
+
+function handleEnemyMovement() {
   if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') {
-    enemy.velocity.x = -5
-    // Prevent the enemy from going out of bounds on the left
+    enemy.velocity.x = -5;
     if (enemy.position.x + enemy.velocity.x >= 0) {
-      enemy.switchSprite('run')
+      enemy.switchSprite('run');
     } else {
       enemy.velocity.x = 0;
     }
   } else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') {
-    enemy.velocity.x = 5
-    // Prevent the enemy from going out of bounds on the right
+    enemy.velocity.x = 5;
     if (enemy.position.x + enemy.width + enemy.velocity.x <= canvas.width - rightBoundaryOffset) {
-        enemy.switchSprite('run')
-      } else {
-        enemy.velocity.x = 0;
-      }
+      enemy.switchSprite('run');
     } else {
-      enemy.switchSprite('idle')
+      enemy.velocity.x = 0;
     }
+  } else {
+    enemy.switchSprite('idle');
+  }
 
-  // jumping
+  // Jumping logic
   if (enemy.velocity.y < 0) {
-    enemy.switchSprite('jump')
+    enemy.switchSprite('jump');
   } else if (enemy.velocity.y > 0) {
-    enemy.switchSprite('fall')
+    enemy.switchSprite('fall');
   }
-
-
-
-  // detect for collision & enemy gets hit
-  if (
-    rectangularCollision({
-      rectangle1: player,
-      rectangle2: enemy
-    }) &&
-    player.isAttacking &&
-    player.framesCurrent === 4
-  ) {
-    enemy.takeHit()
-    player.isAttacking = false
-
-    gsap.to('#enemyHealth', {
-      width: enemy.health + '%'
-    })
-  }
-
-  // if player misses
-  if (player.isAttacking && player.framesCurrent === 4) {
-    player.isAttacking = false
-  }
-
-  // this is where our player gets hit
-  if (
-    rectangularCollision({
-      rectangle1: enemy,
-      rectangle2: player
-    }) &&
-    enemy.isAttacking &&
-    enemy.framesCurrent === 2
-  ) {
-    player.takeHit()
-    enemy.isAttacking = false
-
-    gsap.to('#playerHealth', {
-      width: player.health + '%'
-    })
-  }
-
-  // if player misses
-  if (enemy.isAttacking && enemy.framesCurrent === 2) {
-    enemy.isAttacking = false
-  }
-
-  // end game based on health
-  if (enemy.health <= 0 || player.health <= 0) {
-    determineWinner({ player, enemy, timerId })
-
-  // new game
-
-    document.addEventListener('keydown', newGameKey);
-
-
-  }
-
 }
 
-animate()
+function handleCollision() {
+  // Player hit detection
+  if (rectangularCollision({ rectangle1: player, rectangle2: enemy }) && player.isAttacking && player.framesCurrent === 4) {
+    enemy.takeHit();
+    player.isAttacking = false;
+    gsap.to('#enemyHealth', { width: enemy.health + '%' });
+  }
+
+  // Player miss detection
+  if (player.isAttacking && player.framesCurrent === 4) {
+    player.isAttacking = false;
+  }
+
+  // Enemy hit detection
+  if (rectangularCollision({ rectangle1: enemy, rectangle2: player }) && enemy.isAttacking && enemy.framesCurrent === 2) {
+    player.takeHit();
+    enemy.isAttacking = false;
+    gsap.to('#playerHealth', { width: player.health + '%' });
+  }
+
+  // Enemy miss detection
+  if (enemy.isAttacking && enemy.framesCurrent === 2) {
+    enemy.isAttacking = false;
+  }
+}
+
+animate();
 
 window.addEventListener('keydown', (event) => {
   if (!player.dead) {
     switch (event.key) {
       case 'd':
-        keys.d.pressed = true
-        player.lastKey = 'd'
-        break
+        keys.d.pressed = true;
+        player.lastKey = 'd';
+        break;
       case 'a':
-        keys.a.pressed = true
-        player.lastKey = 'a'
-        break
+        keys.a.pressed = true;
+        player.lastKey = 'a';
+        break;
       case 'w':
-         // Prevent double jump by checking if player is on the ground
-         if (!player.isJumping) {
-            player.velocity.y = -20;
-            player.isJumping = true;
-          }
-          break;
+        // Prevent double jump by checking if player is on the ground
+        if (!player.isJumping) {
+          player.velocity.y = -20;
+          player.isJumping = true;
+        }
+        break;
       case ' ':
-        player.attack()
-        break
+        player.attack();
+        break;
     }
   }
 
   if (!enemy.dead) {
     switch (event.key) {
       case 'ArrowRight':
-        keys.ArrowRight.pressed = true
-        enemy.lastKey = 'ArrowRight'
-        break
+        keys.ArrowRight.pressed = true;
+        enemy.lastKey = 'ArrowRight';
+        break;
       case 'ArrowLeft':
-        keys.ArrowLeft.pressed = true
-        enemy.lastKey = 'ArrowLeft'
-        break
+        keys.ArrowLeft.pressed = true;
+        enemy.lastKey = 'ArrowLeft';
+        break;
       case 'ArrowUp':
         // Prevent double jump by checking if enemy is on the ground
         if (!enemy.isJumping) {
@@ -342,49 +303,45 @@ window.addEventListener('keydown', (event) => {
         }
         break;
       case 'ArrowDown':
-        enemy.attack()
-
-        break
+        enemy.attack();
+        break;
     }
   }
-})
+});
 
 window.addEventListener('keyup', (event) => {
   switch (event.key) {
     case 'd':
-      keys.d.pressed = false
-      break
+      keys.d.pressed = false;
+      break;
     case 'a':
-      keys.a.pressed = false
-      break
+      keys.a.pressed = false;
+      break;
   }
 
-  // enemy keys
+  // Enemy keys
   switch (event.key) {
     case 'ArrowRight':
-      keys.ArrowRight.pressed = false
-      break
+      keys.ArrowRight.pressed = false;
+      break;
     case 'ArrowLeft':
-      keys.ArrowLeft.pressed = false
-      break
+      keys.ArrowLeft.pressed = false;
+      break;
   }
-})
+});
 
-
-
-// New game 
+// New game logic
 window.addEventListener('keydown', (event) => {
-    if (event.key === 'n' || event.key === 'N') {
-      // Reload the page
-      location.reload();
-    }
-  });
-  
-  window.addEventListener('keydown', (event) => {
-    if (event.key === 'y' || event.key === 'Y') {
-      // Reload the page
-      location.reload();
-    }
-  });
-
-
+  if (event.key === 'n' || event.key === 'N' || event.key === 'y' || event.key === 'Y') {
+    player.health = 100;
+    enemy.health = 100;
+    player.dead = false;
+    enemy.dead = false;
+    // Reset player and enemy positions if needed
+    player.position.x = 0;
+    enemy.position.x = 400;
+    // Reset health bars
+    gsap.to('#playerHealth', { width: player.health + '%' });
+    gsap.to('#enemyHealth', { width: enemy.health + '%' });
+  }
+});
